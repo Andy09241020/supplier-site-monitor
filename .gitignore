@@ -1,0 +1,12 @@
+# 絕不進版控：供應商清單、憑證、資料、日誌
+*.xlsx
+*.xls
+*.csv
+changedetection.json
+*.log
+logs/
+venv/
+__pycache__/
+.DS_Store
+.env
+secrets*

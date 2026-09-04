@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  每日日報排程（範本）
+  安裝前請將 __HOME__ 替換為實際家目錄，例如：
+    sed "s|__HOME__|$HOME|g" com.example.sitemonitor.dailydigest.plist \
+      > ~/Library/LaunchAgents/com.example.sitemonitor.dailydigest.plist
+    launchctl load ~/Library/LaunchAgents/com.example.sitemonitor.dailydigest.plist
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.example.sitemonitor.dailydigest</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>__HOME__/changedetection-data/venv/bin/python3</string>
+        <string>__HOME__/projects/web_monitor/digest/daily_digest.py</string>
+    </array>
+
+    <!-- 08:40：排在 08:30 巡檢之後、當日資料覆蓋昨日摘要之前 -->
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key><integer>8</integer>
+        <key>Minute</key><integer>40</integer>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>__HOME__/changedetection-data/logs/dailydigest.out.log</string>
+    <key>StandardErrorPath</key>
+    <string>__HOME__/changedetection-data/logs/dailydigest.err.log</string>
+
+    <key>RunAtLoad</key>
+    <false/>
+</dict>
+</plist>
