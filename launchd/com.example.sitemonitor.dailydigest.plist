@@ -6,6 +6,11 @@
     sed "s|__HOME__|$HOME|g" com.example.sitemonitor.dailydigest.plist \
       > ~/Library/LaunchAgents/com.example.sitemonitor.dailydigest.plist
     launchctl load ~/Library/LaunchAgents/com.example.sitemonitor.dailydigest.plist
+
+  常駐模式，而非排程模式：跟 changedetection 一樣一直活著，而不是排程在某個瞬間被叫起來。
+  排程式的一次性工作（StartCalendarInterval），機器在睡時 launchd 會延到「真正喚醒」才執行——
+  實測延遲最長 70 分鐘。常駐的程式（KeepAlive）則能利用機器每次短暫醒來的時間片段繼續跑，
+  時間到就寄、機器睡醒就自動補寄，不需要等到使用者真正打開電腦。
 -->
 <plist version="1.0">
 <dict>
@@ -16,21 +21,17 @@
     <array>
         <string>__HOME__/changedetection-data/venv/bin/python3</string>
         <string>__HOME__/projects/web_monitor/digest/daily_digest.py</string>
+        <string>--daemon</string>
     </array>
 
-    <!-- 08:40：排在 08:30 巡檢之後、當日資料覆蓋昨日摘要之前 -->
-    <key>StartCalendarInterval</key>
-    <dict>
-        <key>Hour</key><integer>8</integer>
-        <key>Minute</key><integer>40</integer>
-    </dict>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
 
     <key>StandardOutPath</key>
     <string>__HOME__/changedetection-data/logs/dailydigest.out.log</string>
     <key>StandardErrorPath</key>
     <string>__HOME__/changedetection-data/logs/dailydigest.err.log</string>
-
-    <key>RunAtLoad</key>
-    <false/>
 </dict>
 </plist>
