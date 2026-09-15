@@ -386,11 +386,30 @@ def build_report(day, tag_uuid):
             "n_sup": len(suppliers), "total": total, "errored": errored}
 
 
-def run_daemon(tag_uuid, smtp):
+def run_daemon(args):
     sys.stderr.write(f"[常駐] 啟動，每 {POLL_SECONDS} 秒檢查一次，"
                      f"每天 {RUN_AFTER_HOUR:02d}:{RUN_AFTER_MIN:02d} 後寄出前一日日報\n")
     sys.stderr.flush()
+    tag_uuid = smtp = None
     while True:
+        # 設定（群組 uuid、SMTP 帳密）延後到迴圈內第一次用到才載入，且失敗只重試不崩潰。
+        # RunAtLoad + KeepAlive 代表開機/登入當下就會啟動，那一刻 changedetection
+        # 可能還沒把 tag.json 寫穩；裸奔載入會讓 main() 直接丟例外、被 launchd
+        # 立刻重啟，若根因沒解除就變成 crash-loop。
+        if smtp is None:
+            try:
+                tag_uuid, tag = find_tag()
+                smtp = load_smtp(tag)
+                if args.to:
+                    smtp["to"] = [a.strip() for a in args.to.split(",") if a.strip()]
+                sys.stderr.write(f"[常駐] 設定載入成功（群組 {tag_uuid}）\n")
+                sys.stderr.flush()
+            except Exception:
+                sys.stderr.write("[常駐] 設定尚未就緒，稍後重試：\n" + traceback.format_exc())
+                sys.stderr.flush()
+                time.sleep(POLL_SECONDS)
+                continue
+
         try:
             for day in due_days(datetime.now(TZ)):
                 r = build_report(day, tag_uuid)
@@ -418,14 +437,15 @@ def parse_args():
 
 def main():
     args = parse_args()
+
+    if args.daemon:
+        run_daemon(args)
+        return
+
     tag_uuid, tag = find_tag()
     smtp = load_smtp(tag)
     if args.to:
         smtp["to"] = [a.strip() for a in args.to.split(",") if a.strip()]
-
-    if args.daemon:
-        run_daemon(tag_uuid, smtp)
-        return
 
     try:
         day = (dtdate.fromisoformat(args.date) if args.date
